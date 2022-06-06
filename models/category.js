@@ -6,7 +6,6 @@ var CategorySchema = new Schema(
   {
     name: {type: String, required: true,minlength: 3, maxLength: 100, },
     description: {type: String, required: true},
-    imgUrl: {type: String, required: true},
   }
 );
 
