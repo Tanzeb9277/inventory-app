@@ -7,9 +7,8 @@ require('dotenv').config();
 
 const aws = require('aws-sdk');
 
-let s3 = new aws.S3({
-  dbUrl: process.env.DB_URL,
-});
+let dbUrl =  process.env.DB_URL;
+
 
 
 
@@ -23,7 +22,7 @@ var app = express();
 //Set up mongoose connection
 var mongoose = require('mongoose');
 const { S3 } = require('aws-sdk');
-var mongoDB = process.env.MONGODB_URI || s3;
+var mongoDB = process.env.MONGODB_URI || dbUrl;
 mongoose.connect(mongoDB, { useNewUrlParser: true , useUnifiedTopology: true});
 var db = mongoose.connection;
 db.on('error', console.error.bind(console, 'MongoDB connection error:'));
