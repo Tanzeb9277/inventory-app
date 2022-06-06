@@ -3,6 +3,7 @@ extends layout
 block content
   h1 Name: #{item.name}
 
+  img(src = item.img)
   p #[strong Description:] #{item.description}
   p #[strong Price:] #{item.price}
   p #[strong In Stock:] #{item.stock}
@@ -11,6 +12,12 @@ block content
       a(href=val.url) #{val.name}
       if index < item.category.length - 1
         |,
+  hr
+  p
+    a(href=item.url+'/delete') Delete Item
+  p
+    a(href=item.url+'/update') Update Item
+
  
 
   

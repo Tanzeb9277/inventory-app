@@ -49,11 +49,6 @@ router.get('/category/:id/delete', category_controller.category_delete_get);
 // POST request to delete category.
 router.post('/category/:id/delete', category_controller.category_delete_post);
 
-// GET request to update category.
-router.get('/category/:id/update', category_controller.category_update_get);
-
-// POST request to update category.
-router.post('/category/:id/update', category_controller.category_update_post);
 
 // GET request for one category.
 router.get('/category/:id', category_controller.category_detail);

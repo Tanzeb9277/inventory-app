@@ -14,9 +14,16 @@ exports.index = function(req, res) {
         category_count: function(callback) {
             Category.countDocuments({}, callback);
         },
+        item_list: function(callback){
+            Item.find({}, 'name price imgUrl')
+                .sort({name : 1})
+                .populate('price')
+                .populate('imgUrl')
+                .exec(callback)
+        }
 
     }, function(err, results) {
-        res.render('index', { title: 'Inventory Home', error: err, data: results });
+        res.render('index', { title: 'Catalog', error: err, data: results });
     });
 };
 
@@ -45,6 +52,7 @@ exports.item_detail = function(req, res, next) {
               .populate('price')
               .populate('category')
               .populate('stock')
+              .populate('imgUrl')
               .exec(callback);
         },
 
@@ -97,6 +105,7 @@ exports.item_create_post = [
     body('description', 'Summary must not be empty.').trim().isLength({ min: 1 }).escape(),
     body('stock', 'Stock must not be empty').isNumeric().escape(),
     body('price', 'Price must not be empty').isFloat().escape(),
+    body('imgUrl', 'Image url must not be empty').isString(),
     body('category.*').escape(),
 
     // Process request after validation and sanitization.
@@ -111,6 +120,7 @@ exports.item_create_post = [
             description: req.body.description,
             price: req.body.price,
             stock: req.body.stock,
+            imgUrl: req.body.imgUrl,
             category: req.body.category
            });
 
@@ -147,22 +157,134 @@ exports.item_create_post = [
 ];
 
 
-// Display item delete form on GET.
-exports.item_delete_get = function(req, res) {
-    res.send('NOT IMPLEMENTED: Book delete GET');
+// Display BookInstance delete form on GET.
+exports.item_delete_get = function(req, res, next) {
+
+    Item.findById(req.params.id)
+    .populate('category')
+    .exec(function (err, item) {
+        if (err) { return next(err); }
+        if (item==null) { // No results.
+            res.redirect('/catalog/items');
+        }
+        // Successful, so render.
+        res.render('item_delete', { title: 'Delete item', item:  item});
+    })
+
 };
 
-// Handle item delete on POST.
-exports.item_delete_post = function(req, res) {
-    res.send('NOT IMPLEMENTED: Book delete POST');
+// Handle BookInstance delete on POST.
+exports.item_delete_post = function(req, res, next) {
+    
+    // Assume valid BookInstance id in field.
+    Item.findByIdAndRemove(req.body.id, function deleteItem(err) {
+        if (err) { return next(err); }
+        // Success, so redirect to list of BookInstance items.
+        res.redirect('/catalog/items');
+        });
+
 };
 
-// Display item update form on GET.
-exports.item_update_get = function(req, res) {
-    res.send('NOT IMPLEMENTED: Book update GET');
+// Display book update form on GET.
+exports.item_update_get = function(req, res, next) {
+
+    // Get book, authors and genres for form.
+    async.parallel({
+        item: function(callback) {
+            Item.findById(req.params.id).populate('category').exec(callback);
+        },
+        categories: function(callback) {
+            Category.find(callback);
+        },
+        }, function(err, results) {
+            if (err) { return next(err); }
+            if (results.item==null) { // No results.
+                var err = new Error('Item not found');
+                err.status = 404;
+                return next(err);
+            }
+            // Success.
+            // Mark our selected genres as checked.
+            for (var all_g_iter = 0; all_g_iter < results.categories.length; all_g_iter++) {
+                for (var item_g_iter = 0; item_g_iter < results.item.category.length; item_g_iter++) {
+                    if (results.categories[all_g_iter]._id.toString()===results.item.category[item_g_iter]._id.toString()) {
+                        results.categories[all_g_iter].checked='true';
+                    }
+                }
+            }
+            res.render('item_form', { title: 'Update Book', categories: results.categories, item: results.item });
+        });
+
 };
 
-// Handle item update on POST.
-exports.item_update_post = function(req, res) {
-    res.send('NOT IMPLEMENTED: Book update POST');
-};
+
+// Handle book update on POST.
+exports.item_update_post = [
+
+    // Convert the genre to an array.
+    (req, res, next) => {
+        if(!(req.body.category instanceof Array)){
+            if(typeof req.body.category ==='undefined')
+            req.body.category = [];
+            else
+            req.body.category = new Array(req.body.category);
+        }
+        next();
+    },
+   
+    // Validate and sanitize fields.
+    body('name', 'Name must not be empty.').trim().isLength({ min: 1 }).escape(),
+    body('description', 'Summary must not be empty.').trim().isLength({ min: 1 }).escape(),
+    body('stock', 'Stock must not be empty').isNumeric().escape(),
+    body('price', 'Price must not be empty').isFloat().escape(),
+    body('imgUrl', 'Image url must not be empty.').isLength({ min: 1 }).escape(),
+    body('category.*').escape(),
+
+    // Process request after validation and sanitization.
+    (req, res, next) => {
+
+        // Extract the validation errors from a request.
+        const errors = validationResult(req);
+
+        // Create a Book object with escaped/trimmed data and old id.
+        var item = new Item(
+          { name: req.body.name,
+            description: req.body.description,
+            price: req.body.price,
+            stock: req.body.stock,
+            imgUrl: req.body.imgUrl,
+            category: req.body.category,
+            _id:req.params.id
+           });
+
+           if (!errors.isEmpty()) {
+            // There are errors. Render form again with sanitized values/error messages.
+
+            // Get all authors and genres for form.
+            async.parallel({
+                categories: function(callback) {
+                    Category.find(callback);
+                },
+            }, function(err, results) {
+                if (err) { return next(err); }
+
+                // Mark our selected genres as checked.
+                for (let i = 0; i < results.categories.length; i++) {
+                    if (item.category.indexOf(results.categories[i]._id) > -1) {
+                        results.categories[i].checked='true';
+                    }
+                }
+                res.render('item_form', { title: 'Create Item', categories:results.categories, item: item, errors: errors.array() });
+            });
+            return;
+        }
+        else {
+            // Data from form is valid. Update the record.
+            Item.findByIdAndUpdate(req.params.id, item, {}, function (err,theitem) {
+                if (err) { return next(err); }
+                   // Successful - redirect to book detail page.
+                   res.redirect(theitem.url);
+                });
+        }
+    }
+];

@@ -16,7 +16,10 @@ block content
       input#price.form-control(type='number', placeholder='price' name='price' value=(undefined===item ? null : item.price) required='true' step=".01")
     div.form-group
       label(for='stock') In stock:
-      input#stock.form-control(type='number', placeholder='stock' name='stock' value=(undefined===item ? null : item.stock) required='true')
+      input#stock.form-control(type='number', placeholder='Number instock' name='stock' value=(undefined===item ? null : item.stock) required='true')
+    div.form-group
+      label(for='imgUrl') Image Url:
+      input#imgUrl.form-control(type='text', placeholder='Image Url' name='imgUrl' value=(undefined===item ? null : item.imgUrl) required='true')
     div.form-group
       label Category:
       div
