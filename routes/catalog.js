@@ -6,7 +6,7 @@ var item_controller = require('../controllers/itemController');
 var category_controller = require('../controllers/categoryController');
 
 
-/// BOOK ROUTES ///
+/// ITEM ROUTES ///
 
 // GET catalog home page.
 router.get('/', item_controller.index);
@@ -35,7 +35,7 @@ router.get('/item/:id', item_controller.item_detail);
 // GET request for list of all  items.
 router.get('/items', item_controller.item_list);
 
-/// AUTHOR ROUTES ///
+/// CATEGORY ROUTES ///
 
 // GET request for creating category. NOTE This must come before route for id (i.e. display author).
 router.get('/category/create', category_controller.category_create_get);
